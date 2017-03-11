@@ -1120,45 +1120,44 @@
                         }else{
 
                             var parsedData;
+                            //create temporary store
+                            req.tmp = {};
 
                             //parse data as json
                             try{
 
                                 parsedData = JSON.parse(value);
 
+                                if(!details.type){
+
+                                    //return all taxes
+                                    delete parsedData.version;
+                                    req.tmp.taxes = parsedData;
+                                    callback();
+
+                                }else if(details.type == 'licence'){
+
+                                    //return only licence
+                                    req.tmp.taxes = parsedData.vehicleLicenses;
+                                    callback();
+
+                                }else if(details.type == 'permit'){
+
+                                    req.tmp.taxes = parsedData.vehiclePermits;
+                                    callback();
+
+                                }else{
+
+                                    customError = new Error('Invalid tax type.');
+                                    customError.status = 403;
+                                    customError.statusType = 'fail';
+                                    next(customError);
+
+                                }
+
                             }catch(e){
 
                                 callback(e);
-
-                            }
-
-                            //create temporary store
-                            req.tmp = {};
-
-                            if(!details.type){
-
-                                //return all taxes
-                                delete parsedData.version;
-                                req.tmp.taxes = parsedData;
-                                callback();
-
-                            }else if(details.type == 'licence'){
-
-                                //return only licence
-                                req.tmp.taxes = parsedData.vehicleLicenses;
-                                callback();
-
-                            }else if(details.type == 'permit'){
-
-                                req.tmp.taxes = parsedData.vehiclePermits;
-                                callback();
-
-                            }else{
-
-                                customError = new Error('Invalid tax type.');
-                                customError.status = 403;
-                                customError.statusType = 'fail';
-                                next(customError);
 
                             }
 
