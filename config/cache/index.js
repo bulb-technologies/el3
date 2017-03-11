@@ -23,26 +23,13 @@
             })
             .on('end', function(){
 
-                var jsonPayload;
-
-                //attempt to parse raw data as json
-                try{
-
-                    jsonPayload = JSON.parse(rawData);
-
-                }catch(e){
-
-                    throw e;
-
-                }
-
                 //init some key/value pairs
-                appCache.set('feeReferences', jsonPayload, function(err, success){
+                appCache.set(process.env.TAXES_CACHE, rawData, function(err, success){
 
                     if(!success){
 
                         throw new Error('Failed to cache feeReferences at app start up.');
-                        
+
                     }
 
                 });

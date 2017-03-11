@@ -1097,7 +1097,96 @@
 
     };
 
-  //export middleware
-  module.exports = middleware;
+    middleware.getTaxes = function(cache){
+
+        return function(req, res, next){
+
+            var details = req.query;
+
+            async.auto({
+
+                getTaxesFromCache: function(callback){
+
+                    cache.get(process.env.TAXES_CACHE, function(err, value){
+
+                        if(err){
+
+                            //node cache error
+                            err.friendly = 'Something went wrong. Please try again.';
+                            err.status = 500;
+                            err.statusType = 'error';
+                            callback(err);
+
+                        }else{
+
+                            var parsedData;
+
+                            //parse data as json
+                            try{
+
+                                parsedData = JSON.parse(value);
+
+                            }catch(e){
+
+                                callback(e);
+
+                            }
+
+                            //create temporary store
+                            req.tmp = {};
+
+                            if(!details.type){
+
+                                //return all taxes
+                                delete parsedData.version;
+                                req.tmp.taxes = parsedData;
+                                callback();
+
+                            }else if(details.type == 'licence'){
+
+                                //return only licence
+                                req.tmp.taxes = parsedData.vehicleLicenses;
+                                callback();
+
+                            }else if(details.type == 'permit'){
+
+                                req.tmp.taxes = parsedData.vehiclePermits;
+                                callback();
+
+                            }else{
+
+                                customError = new Error('Invalid tax type.');
+                                customError.status = 403;
+                                customError.statusType = 'fail';
+                                next(customError);
+
+                            }
+
+                        }
+
+                    });
+
+                }
+
+            }, function(err, results){
+
+                if(err){
+
+                    next(err);
+
+                }else{
+
+                    next();
+
+                }
+
+            });
+
+        };
+
+    }
+
+    //export middleware
+    module.exports = middleware;
 
 })();
