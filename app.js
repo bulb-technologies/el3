@@ -110,7 +110,7 @@ app.use(express.static(path.join(__dirname, 'public')));
 
 //load lib/submodules
 app.use('/', require('./lib/web')(cache));
-app.use('/native', require('./lib/native')(session));
+app.use('/native', require('./lib/native')(session, cache));
 app.use('/api', require('./lib/api')());
 
 // catch 404 and forward to error handler

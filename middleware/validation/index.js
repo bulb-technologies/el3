@@ -10,123 +10,121 @@
 
     middleware.createManufacturer = function(req, res, next){
 
-    //santize
-    req.sanitizeBody('name').whitelist(["-',.0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ "]);
-    req.sanitizeBody('country').whitelist(["-',abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ "]);
-    req.sanitizeBody('telephone').whitelist(["-0123456789"]);
-    req.sanitizeBody('address.postOfficeBoxNumber').whitelist(["0123456789POBOXpobox "]);
-    req.sanitizeBody('address.postalCode').whitelist(["0123456789"]);
-    req.sanitizeBody('address.streetAddress').whitelist(["-',.0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ "]);
-    req.sanitizeBody('address.addressRegion').whitelist(["-',.0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ "]);
-    req.sanitizeBody('address.addressLocality').whitelist(["-',.0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ "]);
+        //santize
+        req.sanitizeBody('name').whitelist(["-',.0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ "]);
+        req.sanitizeBody('country').whitelist(["-',abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ "]);
+        req.sanitizeBody('telephone').whitelist(["-0123456789"]);
+        req.sanitizeBody('address.postOfficeBoxNumber').whitelist(["0123456789POBOXpobox "]);
+        req.sanitizeBody('address.postalCode').whitelist(["0123456789"]);
+        req.sanitizeBody('address.streetAddress').whitelist(["-',.0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ "]);
+        req.sanitizeBody('address.addressRegion').whitelist(["-',.0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ "]);
+        req.sanitizeBody('address.addressLocality').whitelist(["-',.0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ "]);
 
-    //validate
-    req.checkBody('name', '@name parameter is undefined.').notEmpty();
-    req.checkBody('email', '@email parameter is undefined.').notEmpty();
-    req.checkBody('email', '@email value is not a valid email address.').isEmail();
-    req.checkBody('telephone', '@telephone parameter is undefined.').notEmpty();
-    req.checkBody('country', '@country parameter is undefined.').notEmpty();
-    req.checkBody('url', '@url value is not a valid http/https url.').optional().isURL({'protocols': ['https', 'http']});
+        //validate
+        req.checkBody('name', '@name parameter is undefined.').notEmpty();
+        req.checkBody('email', '@email parameter is undefined.').notEmpty();
+        req.checkBody('email', '@email value is not a valid email address.').isEmail();
+        req.checkBody('telephone', '@telephone parameter is undefined.').notEmpty();
+        req.checkBody('country', '@country parameter is undefined.').notEmpty();
+        req.checkBody('url', '@url value is not a valid http/https url.').optional().isURL({'protocols': ['https', 'http']});
 
-    //check for errors
-    var errors = req.validationErrors();
+        //check for errors
+        var errors = req.validationErrors();
 
-    if(errors){
+        if(errors){
 
-      var errorMessages = [];
+              var errorMessages = [];
 
-      async.each(errors, function(errorItem, callback){
+              async.each(errors, function(errorItem, callback){
 
-        errorMessages.push({
+                errorMessages.push({
 
-          "message": errorItem.msg,
-          "param": errorItem.param
+                  "message": errorItem.msg,
+                  "param": errorItem.param
 
-        });
+                });
 
-        callback();
+                callback();
 
-      }, function(err){
+              }, function(err){
 
-        console.log(errors);
+                    //create a new error
+                    customError = new Error('Validation Failed: ' + util.inspect(errors));
+                    customError.friendly = errorMessages;
+                    customError.status = 400;
+                    customError.statusType = 'fail';
+                    next(customError);
 
-        //create a new error
-        customError = new Error('Validation Failed: ' + util.inspect(errors));
-        customError.friendly = errorMessages;
-        customError.status = 400;
-        customError.statusType = 'fail';
-        next(customError);
+              });
 
-      });
+        }else{
 
-    }else{
+            next();
 
-      next();
-
-    }
+        }
 
     };
 
     middleware.createProduct = function(req, res, next){
 
-    //santize
-    req.sanitizeBody('name').whitelist(["-',.0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ "]);
-    req.sanitizeBody('productType').whitelist(["abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ "]);
-    req.sanitizeBody('model').whitelist(["-',.0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ "]);
-    req.sanitizeBody('brand').whitelist(["-',.0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ "]);
-    req.sanitizeBody('gtin').whitelist(["0123456789"]);
+        //santize
+        req.sanitizeBody('name').whitelist(["-',.0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ "]);
+        req.sanitizeBody('productType').whitelist(["abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ "]);
+        req.sanitizeBody('model').whitelist(["-',.0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ "]);
+        req.sanitizeBody('brand').whitelist(["-',.0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ "]);
+        req.sanitizeBody('gtin').whitelist(["0123456789"]);
 
-    //validate
-    req.checkBody('name', '@name parameter is undefined.').notEmpty();
-    req.checkBody('model', '@model parameter is undefined.').notEmpty();
-    req.checkBody('brand', '@brand parameter is undefined.').notEmpty();
-    req.checkBody('gtin', '@gtin parameter is undefined.').notEmpty();
-    req.checkBody('productType', '@productType parameter is undefined.').notEmpty();
-    req.checkBody('description', '@description parameter is undefined.').notEmpty();
-    req.checkBody('description', '@description value is not a valid base64 encoded string.').isBase64();
-    req.checkBody('manufacturer', '@manufacturer parameter is undefined.').notEmpty();
-    req.checkBody('manufacturer', '@manufacturer value is not a valid mongoId.').isMongoId();
-    req.checkBody('url', '@url value is not a valid http/https url.').optional().isURL({'protocols': ['https', 'http']});
-    req.checkBody('image', '@image value is not a valid http/https url.').optional().isURL({'protocols': ['https', 'http']});
-    req.checkBody('releaseDate', '@releaseDate parameter is undefined.').notEmpty();
-    req.checkBody('releaseDate', '@releaseDate value is not a valid ISO8601 formatted date.').isISO8601();
+        //validate
+        req.checkBody('name', '@name parameter is undefined.').notEmpty();
+        req.checkBody('model', '@model parameter is undefined.').notEmpty();
+        req.checkBody('brand', '@brand parameter is undefined.').notEmpty();
+        req.checkBody('gtin', '@gtin parameter is undefined.').notEmpty();
+        req.checkBody('productType', '@productType parameter is undefined.').notEmpty();
+        req.checkBody('description', '@description parameter is undefined.').notEmpty();
+        req.checkBody('description', '@description value is not a valid base64 encoded string.').isBase64();
+        req.checkBody('manufacturer', '@manufacturer parameter is undefined.').notEmpty();
+        req.checkBody('manufacturer', '@manufacturer value is not a valid mongoId.').isMongoId();
+        req.checkBody('url', '@url value is not a valid http/https url.').optional().isURL({'protocols': ['https', 'http']});
+        req.checkBody('image', '@image value is not a valid http/https url.').optional().isURL({'protocols': ['https', 'http']});
+        req.checkBody('releaseDate', '@releaseDate parameter is undefined.').notEmpty();
+        req.checkBody('releaseDate', '@releaseDate value is not a valid ISO8601 formatted date.').isISO8601();
 
-    //check for errors
-    var errors = req.validationErrors();
+        //check for errors
+        var errors = req.validationErrors();
 
-    if(errors){
+        if(errors){
 
-      var errorMessages = [];
+          var errorMessages = [];
 
-      async.each(errors, function(errorItem, callback){
+          async.each(errors, function(errorItem, callback){
 
-        errorMessages.push({
+            errorMessages.push({
 
-          "message": errorItem.msg,
-          "param": errorItem.param
+              "message": errorItem.msg,
+              "param": errorItem.param
 
-        });
+            });
 
-        callback();
+            callback();
 
-      }, function(err){
+          }, function(err){
 
-        console.log(errors);
+            console.log(errors);
 
-        //create a new error
-        customError = new Error('Validation Failed: ' + util.inspect(errors));
-        customError.friendly = errorMessages;
-        customError.status = 400;
-        customError.statusType = 'fail';
-        next(customError);
+            //create a new error
+            customError = new Error('Validation Failed: ' + util.inspect(errors));
+            customError.friendly = errorMessages;
+            customError.status = 400;
+            customError.statusType = 'fail';
+            next(customError);
 
-      });
+          });
 
-    }else{
+        }else{
 
-      next();
+          next();
 
-    }
+        }
 
     };
 
@@ -457,6 +455,143 @@
         }
 
     };
+
+    middleware.getOwnVehicle = function(req, res, next){
+
+        //validate
+        req.checkParams('id', '@id parameter is undefined.').notEmpty();
+        req.checkParams('id', '@id value is not a valid mongoId.').isMongoId();
+
+        //check for errors
+        var errors = req.validationErrors();
+
+        if(errors){
+
+        var errorMessages = [];
+
+        async.each(errors, function(errorItem, callback){
+
+          errorMessages.push({
+
+            "message": errorItem.msg,
+            "param": errorItem.param
+
+          });
+
+          callback();
+
+        }, function(err){
+
+          console.log(errors);
+
+          //create a new error
+          customError = new Error('Validation Failed: ' + util.inspect(errors));
+          customError.friendly = errorMessages;
+          customError.status = 400;
+          customError.statusType = 'fail';
+          next(customError);
+
+        });
+
+        }else{
+
+        next();
+
+        }
+
+    };
+
+    middleware.getOwnVehicleToken = function(req, res, next){
+
+        //validate
+        req.checkParams('id', '@id parameter is undefined.').notEmpty();
+        req.checkParams('id', '@id value is not a valid mongoId.').isMongoId();
+
+        //check for errors
+        var errors = req.validationErrors();
+
+        if(errors){
+
+        var errorMessages = [];
+
+        async.each(errors, function(errorItem, callback){
+
+          errorMessages.push({
+
+            "message": errorItem.msg,
+            "param": errorItem.param
+
+          });
+
+          callback();
+
+        }, function(err){
+
+          console.log(errors);
+
+          //create a new error
+          customError = new Error('Validation Failed: ' + util.inspect(errors));
+          customError.friendly = errorMessages;
+          customError.status = 400;
+          customError.statusType = 'fail';
+          next(customError);
+
+        });
+
+        }else{
+
+        next();
+
+        }
+
+    };
+
+    middleware.getOwnVehicleTokens = function(req, res, next){
+
+        //validate
+        req.checkParams('id', '@id parameter is undefined.').notEmpty();
+        req.checkParams('id', '@id value is not a valid mongoId.').isMongoId();
+        req.checkQuery('payment_status', '@payment_status value is not one of Complete or Due').optional().isIn(['Complete', 'Due']);
+
+        //check for errors
+        var errors = req.validationErrors();
+
+        if(errors){
+
+        var errorMessages = [];
+
+        async.each(errors, function(errorItem, callback){
+
+          errorMessages.push({
+
+            "message": errorItem.msg,
+            "param": errorItem.param
+
+          });
+
+          callback();
+
+        }, function(err){
+
+          console.log(errors);
+
+          //create a new error
+          customError = new Error('Validation Failed: ' + util.inspect(errors));
+          customError.friendly = errorMessages;
+          customError.status = 400;
+          customError.statusType = 'fail';
+          next(customError);
+
+        });
+
+        }else{
+
+        next();
+
+        }
+
+    };
+
   //export middleware
   module.exports = middleware;
 
