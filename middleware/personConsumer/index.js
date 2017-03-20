@@ -354,7 +354,7 @@
             getTokens: ['findVehicle', function(results, callback){
 
                 //query builder
-                var q = TokenModel.find({'vehicle': results.findVehicle._id});
+                var q = TokenModel.find({'vehicle': results.findVehicle._id, 'taxID': req.query.tax_id});
 
                 if(req.query.payment_status == 'Complete'){
 
@@ -368,7 +368,8 @@
 
                 }
 
-                q.lean()
+                q.select('name validUntil paymentDueDate paymentStatus')
+                .lean()
                 .exec(function(err, tokens){
 
                     if(err){
@@ -438,6 +439,13 @@
 
                         //delete vehicle property
                         delete token.vehicle;
+
+                        if(token.paymentStatus == 'Due'){
+
+                            //delete late payment  proof since the token isnt paid for
+                            delete token.latePaymentProof;
+
+                        }
 
                         //create temporary store
                         req.tmp = {};
