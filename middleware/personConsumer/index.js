@@ -94,7 +94,7 @@
                 findVehicle: function(callback){
 
                     VehicleModel.findOne({'_id': details.id, 'owner.person': '58c2e83ec9df6709149dab5b'}) // TODO: Get id from session
-                    .select('-_id licences permits created vehicleClass numberPlate')
+                    .select('licences permits created vehicleClass numberPlate')
                     .lean()
                     .exec(function(err, vehicle){
 

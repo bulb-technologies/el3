@@ -548,9 +548,13 @@
 
     middleware.getOwnVehicleTokens = function(req, res, next){
 
+        //santize
+        req.sanitizeQuery('tax_id').whitelist(["0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ"]);
+
         //validate
         req.checkParams('id', '@id parameter is undefined.').notEmpty();
         req.checkParams('id', '@id value is not a valid mongoId.').isMongoId();
+        req.checkQuery('tax_id', '@tax_id parameter is undefined').notEmpty();
         req.checkQuery('payment_status', '@payment_status value is not one of Complete or Due').optional().isIn(['Complete', 'Due']);
 
         //check for errors
