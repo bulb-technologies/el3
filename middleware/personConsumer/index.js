@@ -5,6 +5,7 @@
     var async = require('async');
     var models = require(_ + 'models');
     var TokenModel = models.tokenModel;
+    var jsonpatch = require('fast-json-patch');
     var VehicleModel = models.vehicleModel;
     var PersonConsumerModel = models.personConsumerModel;
 
@@ -51,7 +52,178 @@
 
     middleware.updateOwnAccount = function(req, res, next){
 
-        next();
+        var details = req.body;
+
+        async.auto({
+
+            getConsumer: function(callback){
+
+                PersonConsumerModel.findById('58c2e83ec9df6709149dab5b') // TODO: Get id from session
+                .exec(function(err, consumer){
+
+                    if(err){
+
+                        //db error
+                        err.friendly = 'Something went wrong. Please try again.';
+                        err.status = 500;
+                        err.statusType = 'error';
+                        callback(err);
+
+                    }else{
+
+                        callback(null, consumer);
+
+                    }
+
+                });
+
+            },
+
+            validatePatch: ['getConsumer', function(results, callback){
+
+                var consumer = results.getConsumer;
+
+                try{
+
+                    var errors = jsonpatch.validate(details.patches, consumer);
+
+                }catch(e){
+
+                    err.friendly = 'Something went wrong. Please try again.';
+                    err.status = 500;
+                    err.statusType = 'error';
+                    callback(err);
+
+                }
+
+                if(errors === undefined){
+
+                    callback();
+
+                }else{
+
+                    callback(errors);
+
+                }
+
+            }],
+
+            checkForBlacklistedPaths: ['validatePatch', function(results, callback){
+
+                var unwantedPaths = [
+                    '/_id',
+                    '/name',
+                    '/identification',
+                    '/telephone',
+                    '/nationality',
+                    '/created',
+                    '/lastModified',
+                    '/emergency/*/created',
+                    '/driversLicence/rfidTagSerialNumber'
+                ];
+
+                //Short code
+                function matchRuleShort(str, rule){
+                    return new RegExp("^" + rule.split("*").join(".*") + "$").test(str);
+                }
+
+                async.map(details.patches, function(item, callback){
+
+                    callback(null, item.path);
+
+                }, function(err, results){
+
+                    async.each(unwantedPaths, function(unwantedPath, callback){
+
+                        async.each(results, function(suppliedPath, callback){
+
+                            if(matchRuleShort(suppliedPath, unwantedPath)){
+
+                                callback(suppliedPath);
+
+                            }else{
+
+                                callback();
+
+                            }
+
+                        }, function(err){
+
+                            if(err){
+
+                                callback(err);
+
+                            }else{
+
+                                callback();
+
+                            }
+
+                        });
+
+                    }, function(err){
+
+                        if(err){
+
+                            //create a new error
+                            customError = new Error('Modifying value at path: \"' + err + '\" is forbidden.');
+                            customError.status = 403;
+                            customError.statusType = 'fail';
+                            callback(customError);
+
+                        }else{
+
+                            callback();
+
+                        }
+
+                    });
+
+                });
+
+
+            }],
+
+            applyPatchAndUpdate: ['checkForBlacklistedPaths', function(results, callback){
+
+                var consumer = results.getConsumer;
+
+                jsonpatch.apply(consumer, details.patches);
+
+                //save
+                consumer.save(function(err){
+
+                    if(err){ // TODO: address save errors properly
+
+                        //db error
+                        err.friendly = 'Something went wrong. Please try again.';
+                        err.status = 500;
+                        err.statusType = 'error';
+                        callback(err);
+
+                    }else{
+
+                        callback();
+
+                    }
+
+                });
+
+            }]
+
+        }, function(err, results){
+
+            if(err){
+
+                next(err);
+
+            }else{
+
+                next();
+
+            }
+
+        });
 
     };
 
