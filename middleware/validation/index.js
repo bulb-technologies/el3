@@ -596,6 +596,97 @@
 
     };
 
+    middleware.getOwnVehicleOffence = function(req, res, next){
+
+        //validate
+        req.checkParams('id', '@id parameter is undefined.').notEmpty();
+        req.checkParams('id', '@id value is not a valid mongoId.').isMongoId();
+
+        //check for errors
+        var errors = req.validationErrors();
+
+        if(errors){
+
+        var errorMessages = [];
+
+        async.each(errors, function(errorItem, callback){
+
+          errorMessages.push({
+
+            "message": errorItem.msg,
+            "param": errorItem.param
+
+          });
+
+          callback();
+
+        }, function(err){
+
+          console.log(errors);
+
+          //create a new error
+          customError = new Error('Validation Failed: ' + util.inspect(errors));
+          customError.friendly = errorMessages;
+          customError.status = 400;
+          customError.statusType = 'fail';
+          next(customError);
+
+        });
+
+        }else{
+
+        next();
+
+        }
+
+    };
+
+    middleware.getOwnVehicleOffences = function(req, res, next){
+
+        //validate
+        req.checkParams('id', '@id parameter is undefined.').notEmpty();
+        req.checkParams('id', '@id value is not a valid mongoId.').isMongoId();
+        req.checkQuery('payment_status', '@payment_status value is not one of Complete or Due').optional().isIn(['Complete', 'Due']);
+
+        //check for errors
+        var errors = req.validationErrors();
+
+        if(errors){
+
+        var errorMessages = [];
+
+        async.each(errors, function(errorItem, callback){
+
+          errorMessages.push({
+
+            "message": errorItem.msg,
+            "param": errorItem.param
+
+          });
+
+          callback();
+
+        }, function(err){
+
+          console.log(errors);
+
+          //create a new error
+          customError = new Error('Validation Failed: ' + util.inspect(errors));
+          customError.friendly = errorMessages;
+          customError.status = 400;
+          customError.statusType = 'fail';
+          next(customError);
+
+        });
+
+        }else{
+
+        next();
+
+        }
+
+    };
+
   //export middleware
   module.exports = middleware;
 

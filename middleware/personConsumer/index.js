@@ -7,6 +7,7 @@
     var TokenModel = models.tokenModel;
     var jsonpatch = require('fast-json-patch');
     var VehicleModel = models.vehicleModel;
+    var OffenceModel = models.offenceModel;
     var PersonConsumerModel = models.personConsumerModel;
 
     //define middleware here
@@ -579,7 +580,7 @@
 
         });
 
-    }
+    };
 
     middleware.getOwnVehicleToken = function(req, res, next){
 
@@ -636,6 +637,166 @@
                 }else{
 
                     customError = new Error('Token not found.');
+                    customError.status = 404;
+                    customError.statusType = 'fail';
+                    next(customError);
+
+                }
+
+            }
+
+        });
+
+    };
+
+    middleware.getOwnVehicleOffences = function(req, res, next){
+
+        var details = req.params;
+
+        async.auto({
+
+            findVehicle: function(callback){
+
+                VehicleModel.findOne({'_id': details.id, 'owner.person': '58c2e83ec9df6709149dab5b'}) // TODO: Get id from session
+                .select('_id')
+                .lean()
+                .exec(function(err, vehicle){
+
+                    if(err){
+
+                      //db error
+                      err.friendly = 'Something went wrong. Please try again.';
+                      err.status = 500;
+                      err.statusType = 'error';
+                      callback(err);
+
+                    }else{
+
+                        if(vehicle){
+
+                            callback(null, vehicle);
+
+                        }else{
+
+                            customError = new Error('Vehicle not found.');
+                            customError.status = 404;
+                            customError.statusType = 'fail';
+                            callback(customError);
+
+                        }
+
+                    }
+
+                });
+
+            },
+
+            getOffences: ['findVehicle', function(results, callback){
+
+                //query builder
+                var q = OffenceModel.find({'vehicle': results.findVehicle._id});
+
+                if(req.query.payment_status == 'Complete'){
+
+                    q.where({'paymentStatus': 'Complete'})
+
+                }
+
+                if(req.query.payment_status == 'Due'){
+
+                    q.where({'paymentStatus': 'Due'})
+
+                }
+
+                q.select('committed ticketReference paymentStatus')
+                .lean()
+                .exec(function(err, offences){
+
+                    if(err){
+
+                      //db error
+                      err.friendly = 'Something went wrong. Please try again.';
+                      err.status = 500;
+                      err.statusType = 'error';
+                      callback(err);
+
+                  }else{
+
+                      //create temporary store
+                      req.tmp = {};
+                      req.tmp.offences = offences
+                      callback();
+
+                  }
+
+                });
+
+            }]
+
+        }, function(err, results){
+
+            if(err){
+
+                next(err);
+
+            }else{
+
+                next();
+
+            }
+
+        });
+
+    };
+
+    middleware.getOwnVehicleOffence = function(req, res, next){
+
+        var details = req.params;
+
+        OffenceModel.findById(details.id)
+        .populate({
+
+            'path': 'vehicle',
+            'select': 'owner numberPlate'
+
+        })
+        .lean()
+        .exec(function(err, offence){
+
+            if(err){
+
+                //db error
+                err.friendly = 'Something went wrong. Please try again.';
+                err.status = 500;
+                err.statusType = 'error';
+                next(err);
+
+            }else{
+
+                if(offence){
+
+                    if(offence.vehicle.owner.person.toString() == '58c2e83ec9df6709149dab5b'){ // TODO: Get id from session
+
+                        //delete vehicle property
+                        delete offence.vehicle;
+
+                        //create temporary store
+                        req.tmp = {};
+                        req.tmp.offence = offence
+                        next();
+
+                    }else{
+
+                        customError = new Error('Offence doesn\'t belong to vehicle ' + token.vehicle.numberPlate +  '.');
+                        customError.status = 403;
+                        customError.statusType = 'fail';
+                        next(customError);
+
+                    }
+
+                }else{
+
+                    customError = new Error('Offence not found.');
                     customError.status = 404;
                     customError.statusType = 'fail';
                     next(customError);

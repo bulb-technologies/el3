@@ -20,11 +20,11 @@
 
   models.manufacturerModel = db.model('Manufacturer', require('./manufacturer'));
 
+  models.offenceModel = db.model('Offence', require('./offence'));
+
   models.officerModel = db.model('Officer', require('./officer'));
 
   models.organizationConsumerModel = db.model('Organization Consumer', require('./organizationConsumer'));
-
-  models.tokenModel = db.model('Token', require('./token'));
 
   models.personConsumerModel = db.model('Person Consumer', require('./personConsumer'));
 
@@ -37,6 +37,8 @@
   models.productModel = db.model('Product', require('./product'));
 
   models.scannerBundleModel = db.model('Scanner Bundle', require('./scannerBundle'));
+
+   models.tokenModel = db.model('Token', require('./token'));
 
   models.vehicleModel = db.model('Vehicle', require('./vehicle'));
 
