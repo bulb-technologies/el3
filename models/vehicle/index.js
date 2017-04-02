@@ -13,8 +13,8 @@
         person: {type: ObjectId, ref: 'Person Consumer'},
         organization: {type: ObjectId, ref: 'Organization Consumer'}
     },
-    licences: [ObjectId], //ObjectId of taxes
-    permits: [ObjectId],
+    licences: [String],
+    permits: [String],
     rfidTagSerialNumber: {type: String, trim: true, unique: true, required: true},
     vehicleClass: {type: String, index:true, required: true, enum: ['L', 'H', 'XH', 'XXH']},
     created: {type: Date, default: Date.now()},
