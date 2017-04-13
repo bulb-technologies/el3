@@ -12,7 +12,6 @@
     name: {type: String, trim: true, required: true},
     validFrom: {type: Date, required: true},
     validUntil: {type: Date, required: true},
-    paymentDueDate: {type: Date, required: true},
     minimumPaymentDue: {type: Number, index: true, sparse: true},
     vehicle: {type: ObjectId, ref: 'Vehicle', required: true},
     taxID: {type: String, trim: true, index: true, required: true},

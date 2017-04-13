@@ -10,7 +10,10 @@
 
     serialNumber: {type: String, trim: true, unique: true, required: true},
     product: {type: ObjectId, ref: 'Product'},
+    IndividualProductType: {type: String, trim: true, enum: ['Device', 'Cradle', 'External Battery', 'RFID Reader Module', 'Finger Print Reader Module', 'RFID Tag'], required: true},
+    active: {type: Boolean, default: true, required: true},
     purchaseDate: {type: Date, required: true},
+    lastModified: {type: Date, default: Date.now()},
     created: {type: Date, default: Date.now()}
 
   });
