@@ -16,7 +16,7 @@
     },
     identification: {type: String, trim: true, unique: true, required: true},
     role: {type: String, default: 'officer'},
-    officerType: {type: String, trim: true, enum: ['Licensing']},
+    officerType: {type: String, trim: true, enum: ['Licencing']},
     worksFor: {type: ObjectId, ref: 'Government Organization', required: true},
     created: {type: Date, default: Date.now()}
 

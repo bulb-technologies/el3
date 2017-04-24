@@ -34,8 +34,8 @@
 
     }
 
-    //Transport Administrator can only create Licensing Offices
-    newGovOrg.organizationType = 'Licensing Office';
+    //Transport Administrator can only create Licencing Offices
+    newGovOrg.organizationType = 'Licencing Office';
     newGovOrg.parentOrganization = '58b73c43a14cd60ca85489de'; // TODO: Get parent organization from session
 
     //save

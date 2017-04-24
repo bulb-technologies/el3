@@ -18,7 +18,7 @@
     email: {type: String, trim: true, unique: true, sparse: true},
     telephone: {type: String, trim: true, unique: true, sparse: true},
     role: {type: String, default: 'administrator'},
-    administratorType: {type: String, trim: true, required: true, enum: ['System', 'Transport Headquarters', 'Licensing Office', 'Police Headquarters', 'Police Office', 'POS Payment Vendor']},
+    administratorType: {type: String, trim: true, required: true, enum: ['System', 'Transport Headquarters', 'Licencing Office', 'Police Headquarters', 'Police Office', 'POS Payment Vendor']},
     worksFor: {
 
       governmentOrganization: {type: ObjectId, ref: 'Government Organization', sparse: true},

@@ -21,7 +21,7 @@
       addressLocality: {type: String, trim: true, sparse: true},
 
     },
-    organizationType: {type: String, trim: true, enum: ['Police Headquarters', 'Transport Headquarters', 'Licensing Office', 'Police Station'], required: true},
+    organizationType: {type: String, trim: true, enum: ['Police Headquarters', 'Transport Headquarters', 'Licencing Office', 'Police Station'], required: true},
     wallet: {
 
       balance: {type: Number, index: true, sparse: true}, //if set, default is 0

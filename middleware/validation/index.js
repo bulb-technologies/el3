@@ -306,7 +306,7 @@
         req.checkBody('email', '@email value is not a valid email address.').isEmail();
         req.checkBody('telephone', '@telephone parameter is undefined.').notEmpty();
         req.checkBody('parentOrganization', '@parentOrganization parameter is not a valid mongoId.').optional().isMongoId();
-        req.checkBody('organizationType', '@organizationType value is not one of Police Headquarters/Transport Headquarters/Licensing Office/Police Station.').optional().isIn(['Police Headquarters', 'Transport Headquarters', 'Licensing Office', 'Police Station']);
+        req.checkBody('organizationType', '@organizationType value is not one of Police Headquarters/Transport Headquarters/Licencing Office/Police Station.').optional().isIn(['Police Headquarters', 'Transport Headquarters', 'Licencing Office', 'Police Station']);
 
 
         //check for errors
@@ -363,7 +363,7 @@
         req.checkBody('email', '@email value is not a valid email address.').isEmail();
         req.checkBody('worksFor', '@worksFor parameter is undefined.').notEmpty();
         req.checkBody('worksFor', '@worksFor parameter is not a valid mongoId.').isMongoId();
-        req.checkBody('administratorType', '@administratorType is not one of Transport Headquarters, Licensing Office, Police Headquarters or Police Office').isIn(['Transport Headquarters', 'Licensing Office', 'Police Headquarters', 'Police Office']);
+        req.checkBody('administratorType', '@administratorType is not one of Transport Headquarters, Licencing Office, Police Headquarters or Police Office').isIn(['Transport Headquarters', 'Licencing Office', 'Police Headquarters', 'Police Office']);
 
         //check for errors
         var errors = req.validationErrors();
@@ -415,7 +415,7 @@
         req.checkBody('name.first', '@name.first parameter is undefined.').notEmpty();
         req.checkBody('name.last', '@name.last parameter is undefined.').notEmpty();
         req.checkBody('identification', '@identification parameter is undefined.').notEmpty();
-        req.checkBody('officerType', '@officerType is not one of Testing, Licensing or Police.').isIn(['Testing', 'Licensing', 'Police']);
+        req.checkBody('officerType', '@officerType is not one of Testing, Licencing or Police.').isIn(['Testing', 'Licencing', 'Police']);
 
         //check for errors
         var errors = req.validationErrors();

@@ -769,7 +769,7 @@
         //check if parentOrganization is supplied
         if(details.parentOrganization){
 
-            if(details.organizationType == 'Licensing Office'){
+            if(details.organizationType == 'Licencing Office'){
 
                 //check if the parentOrganization supplied is Transport Headquarters
                 GovernmentOrganizationModel.find({'_id': details.parentOrganization, 'organizationType': 'Transport Headquarters', 'country': details.country})

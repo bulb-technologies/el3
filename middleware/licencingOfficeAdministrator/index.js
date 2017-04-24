@@ -16,8 +16,8 @@
 
       var details = req.body;
 
-      //check if officer type is Licensing or Testing
-      if(details.officerType == 'Licensing' ||details.officerType == 'Testing'){
+      //check if officer type is Licencing or Testing
+      if(details.officerType == 'Licencing' ||details.officerType == 'Testing'){
 
           //create an instance of AdministratorModel
           var newOfficer = new OfficerModel();
