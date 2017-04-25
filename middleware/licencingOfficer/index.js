@@ -209,15 +209,15 @@
 
                         if(err){
 
-                            //create a new error
-                            customError = new Error('Modifying value at path: \"' + err + '\" is forbidden.');
-                            customError.status = 403;
-                            customError.statusType = 'fail';
-                            callback(customError);
+                          //create a new error
+                          customError = new Error('Modifying value at path: \"' + err + '\" is forbidden.');
+                          customError.status = 403;
+                          customError.statusType = 'fail';
+                          callback(customError);
 
                         }else{
 
-                            callback();
+                          callback();
 
                         }
 
@@ -228,32 +228,167 @@
 
             }],
 
-            applyPatchAndUpdate: ['checkForBlacklistedPaths', function(results, callback){
+            applyPatch: ['checkForBlacklistedPaths', function(results, callback){
 
-                var consumer = results.findConsumer;
+              var consumer = results.findConsumer;
 
-                jsonpatch.apply(consumer, details.patches);
+              jsonpatch.apply(consumer, details.patches);
 
-                //save
-                consumer.save(function(err){
+              //check if drivers licence rfidTagSerialNumber is modified
+              if (consumer.isModified('driversLicence.rfidTagSerialNumber')) {
 
-                    if(err){ // TODO: address save errors properly
+                //check if rfidTagSerialNumber is registered
+                IndividualProductModel.find({"individualProductType": "RFID Tag", "serialNumber": consumer.driversLicence.rfidTagSerialNumber})
+                .count(function (err, count) {
 
-                        //db error
-                        err.friendly = 'Something went wrong. Please try again.';
-                        err.status = 500;
-                        err.statusType = 'error';
-                        callback(err);
+                  if (err) {
 
-                    }else{
+                    //db error
+                    err.friendly = 'Something went wrong. Please try again.';
+                    err.status = 500;
+                    err.statusType = 'error';
+                    callback(err);
 
-                        callback();
+                  } else {
+
+                    if (count) {
+
+                      //check if RFID Tag is already in use
+                      async.parallel({
+
+                        findInVehicles: function (callback) {
+
+                          VehicleModel.findOne({'rfidTagSerialNumber': consumer.driversLicence.rfidTagSerialNumber})
+                          .count(function(err, count){
+
+                            if(err){
+
+                              //db error
+                              err.friendly = 'Something went wrong. Please try again.';
+                              err.status = 500;
+                              err.statusType = 'error';
+                              callback(err);
+
+                            }else{
+
+                              if(count){
+
+                                callback(null, true);
+
+                              }else{
+
+                                callback();
+
+                              }
+
+                            }
+
+                          });
+
+                        },
+
+                        findInPersonConsumers: function(callback){
+
+                          PersonConsumerModel.findOne({'driversLicence.rfidTagSerialNumber': consumer.driversLicence.rfidTagSerialNumber})
+                          .count(function(err, count){
+
+                            if(err){
+
+                              //db error
+                              err.friendly = 'Something went wrong. Please try again.';
+                              err.status = 500;
+                              err.statusType = 'error';
+                              callback(err);
+
+                            }else{
+
+                              if(count){
+
+                                callback(null, true);
+
+                              }else{
+
+                                callback();
+
+                              }
+
+                            }
+
+                          });
+
+                        }
+
+                      }, function(err, results){
+
+                          if(err){
+
+                            callback(err);
+
+                          }else{
+
+                            if(results.findInPersonConsumers !== undefined && results.findInVehicles !== undefined){
+
+                              callback();
+
+                            }else{
+
+                              customError = new Error('RFID Tag already in use.');
+                              customError.status = 403;
+                              customError.statusType = 'fail';
+                              callback(customError);
+
+                            }
+
+                          }
+
+                      });
+
+                    } else {
+
+                      //create a new error
+                      customError = new Error('RFID Tag is not registered');
+                      customError.status = 403;
+                      customError.statusType = 'fail';
+                      callback(customError);
 
                     }
 
+                  }
+
                 });
 
-            }]
+              } else {
+
+                callback();
+
+              }
+
+            }],
+
+            update: ['applyPatch', function (results, callback) {
+
+              var consumer = results.findConsumer;
+
+              //save
+              consumer.save(function(err){
+
+                  if(err){ // TODO: address save errors properly
+
+                      //db error
+                      err.friendly = 'Something went wrong. Please try again.';
+                      err.status = 500;
+                      err.statusType = 'error';
+                      callback(err);
+
+                  }else{
+
+                      callback();
+
+                  }
+
+              });
+
+            }],
 
         }, function(err, results){
 
@@ -713,7 +848,7 @@
 
                     findInPersonConsumers: function(callback){
 
-                        PersonConsumerModel.findOne({'rfidTagSerialNumber': details.rfidTagSerialNumber})
+                        PersonConsumerModel.findOne({'driversLicence.rfidTagSerialNumber': details.rfidTagSerialNumber})
                         .count(function(err, count){
 
                             if(err){
