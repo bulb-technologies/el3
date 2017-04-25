@@ -1312,7 +1312,7 @@
 
     };
 
-    middleware.initializeToken = function(cache){
+    middleware.createToken = function(cache){
 
         return function(req, res, next){
 
