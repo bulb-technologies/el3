@@ -98,7 +98,7 @@
                           //parse data as json
                           try{
 
-                              parsedData = JSON.parse(value);
+                              parsedData = JSON.parse(value).categories;
 
                               for(var taxType in parsedData){
 

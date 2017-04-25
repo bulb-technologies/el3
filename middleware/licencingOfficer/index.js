@@ -1126,12 +1126,12 @@
                                 }else if(details.type == 'licence'){
 
                                     //return only licence
-                                    req.tmp.taxes = parsedData.vehicleLicenses;
+                                    req.tmp.taxes = parsedData.categories.vehicleLicenses;
                                     callback();
 
                                 }else if(details.type == 'permit'){
 
-                                    req.tmp.taxes = parsedData.vehiclePermits;
+                                    req.tmp.taxes = parsedData.categories.vehiclePermits;
                                     callback();
 
                                 }else{

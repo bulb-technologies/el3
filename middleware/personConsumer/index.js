@@ -338,8 +338,8 @@
                 populateTaxes: ['getTaxesFromCache', function(results, callback){
 
                     var vehicle = results.findVehicle;
-                    var licences = results.getTaxesFromCache.vehicleLicenses;
-                    var permits = results.getTaxesFromCache.vehiclePermits;
+                    var licences = results.getTaxesFromCache.categories.vehicleLicenses;
+                    var permits = results.getTaxesFromCache.categories.vehiclePermits;
 
                     //find in licences and permits
                     async.parallel({
