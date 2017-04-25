@@ -162,9 +162,13 @@
                 var unwantedPaths = [
                     '/_id',
                     '/__v',
+                    '/name/*',
+                    '/telephone',
                     '/created',
+                    '/nationality',
                     '/emergency/*',
-                    '/lastModified'
+                    '/lastModified',
+                    '/identification'
                 ];
 
                 async.map(details.patches, function(item, callback){
