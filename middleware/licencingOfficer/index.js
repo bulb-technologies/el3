@@ -2,10 +2,12 @@
 
   var customError;
   var middleware = {};
+  var fs = require('fs');
   var async = require('async');
-  var Moment = require('moment');
-  var utilities = require(_ + 'utilities');
+  var moment = require('moment');
   var models = require(_ + 'models');
+  var jsrsasign = require('jsrsasign');
+  var utilities = require(_ + 'utilities');
   var jsonpatch = require('fast-json-patch');
   var TokenModel = models.tokenModel;
   var VehicleModel = models.vehicleModel;
@@ -14,6 +16,7 @@
   var IndividualProductModel = models.individualProductModel;
   var PersonConsumerModel = models.personConsumerModel;
   var OrganizationConsumerModel = models.organizationConsumerModel;
+  var KEYUTIL = jsrsasign.KEYUTIL;
 
   //define middleware here
 
@@ -548,9 +551,7 @@
             checkForBlacklistedPaths: ['validatePatch', function(results, callback){
 
                 var unwantedPaths = [
-                    '/_id',
-                    '/__v',
-                    '/created'
+                    '/*'
                 ];
 
                 async.map(details.patches, function(item, callback){
@@ -1121,6 +1122,10 @@
                     '/_id',
                     '/__v',
                     '/created',
+                    '/owner/*',
+                    '/numberPlate',
+                    '/vehicleUse',
+                    '/vehicleClass',
                     '/lastModified'
                 ];
 
@@ -1226,215 +1231,296 @@
 
     middleware.getTaxes = function(cache){
 
-        return function(req, res, next){
+    return function(req, res, next){
 
-            var details = req.query;
+      var details = req.query;
 
-            async.auto({
+      async.auto({
 
-                getTaxesFromCache: function(callback){
+          getTaxesFromCache: function(callback){
 
-                    cache.get(process.env.TAXES_CACHE, function(err, value){
+            cache.get(process.env.TAXES_CACHE, function(err, value){
 
-                        if(err){
+              if(err){
 
-                            //node cache error
-                            err.friendly = 'Something went wrong. Please try again.';
-                            err.status = 500;
-                            err.statusType = 'error';
-                            callback(err);
+                //node cache error
+                err.friendly = 'Something went wrong. Please try again.';
+                err.status = 500;
+                err.statusType = 'error';
+                callback(err);
 
-                        }else{
+              }else{
 
-                            var parsedData;
-                            //create temporary store
-                            req.tmp = {};
+                var parsedData;
+                //create temporary store
+                req.tmp = {};
 
-                            //parse data as json
-                            try{
+                //parse data as json
+                try{
 
-                                parsedData = JSON.parse(value);
+                  parsedData = JSON.parse(value);
 
-                                if(!details.type){
+                  if(details.type == 'licence'){
 
-                                    //return all taxes
-                                    delete parsedData.version;
-                                    req.tmp.taxes = parsedData;
-                                    callback();
+                    //return only licence
+                    callback(null, parsedData.categories.vehicleLicenses);
 
-                                }else if(details.type == 'licence'){
+                  }else if(details.type == 'permit'){
 
-                                    //return only licence
-                                    req.tmp.taxes = parsedData.categories.vehicleLicenses;
-                                    callback();
+                    //return only permits
+                    callback(null, parsedData.categories.vehiclePermits);
 
-                                }else if(details.type == 'permit'){
+                  }
 
-                                    req.tmp.taxes = parsedData.categories.vehiclePermits;
-                                    callback();
+                }catch(e){
 
-                                }else{
-
-                                    customError = new Error('Invalid tax type.');
-                                    customError.status = 403;
-                                    customError.statusType = 'fail';
-                                    next(customError);
-
-                                }
-
-                            }catch(e){
-
-                                callback(e);
-
-                            }
-
-                        }
-
-                    });
+                  callback(e);
 
                 }
 
-            }, function(err, results){
-
-                if(err){
-
-                    next(err);
-
-                }else{
-
-                    next();
-
-                }
+              }
 
             });
 
-        };
+        },
+
+        getTokens: ['getTaxesFromCache', function (results, callback) {
+
+          var now = moment();
+          var taxes = results.getTaxesFromCache;
+          //create temporary store
+          req.tmp = {};
+
+          TokenModel.find({'$and': [{'validFrom': {'$lte': now.toISOString()}, 'validUntil': {'$gte': now.toISOString()}}]})
+          .exec(function (err, tokens) {
+
+            if (err) {
+
+              //node cache error
+              err.friendly = 'Something went wrong. Please try again.';
+              err.status = 500;
+              err.statusType = 'error';
+              callback(err);
+
+            } else {
+
+              if (tokens.length > 0) {
+
+                //traverse taxes
+                async.each(taxes, function (tax, callback) {
+
+                  tax.active = 0;
+
+                  //traverse tokens
+                  async.each(tokens, function (token, callback) {
+
+                    //find where token matches the tax
+                    if (token.taxID == tax.id) {tax.active++;}
+
+                    callback();
+
+                  }, function (err) {
+
+                    callback();
+
+                  });
+
+                }, function (err) {
+
+                  req.tmp.taxes = taxes;
+                  callback();
+
+                });
+
+              }else{
+
+                //traverse taxes
+                async.each(taxes, function (tax, callback) {
+
+                  //all taxes dont have an active token
+                  tax.active = 0;
+
+                  callback();
+
+                }, function (err) {
+
+                  req.tmp.taxes = taxes;
+                  callback();
+
+                });
+
+              }
+
+            }
+
+          });
+
+        }]
+
+      }, function(err, results){
+
+          if(err){
+
+            next(err);
+
+          }else{
+
+            next();
+
+          }
+
+      });
+
+    };
 
     };
 
     middleware.createToken = function(cache){
 
-        return function(req, res, next){
+      return function(req, res, next){
 
-           var details = req.body;
+         var details = req.body;
 
-           //send to worker
+         //send to worker
 
-           async.auto({
+         async.auto({
 
-               getTaxesFromCache: function(callback){
+           getTaxesFromCache: function(callback){
 
-                   cache.get(process.env.TAXES_CACHE, function(err, value){
+             cache.get(process.env.TAXES_CACHE, function(err, value){
+
+                 if(err){
+
+                   //node cache error
+                   err.friendly = 'Something went wrong. Please try again.';
+                   err.status = 500;
+                   err.statusType = 'error';
+                   callback(err);
+
+                 }else{
+
+                   if (value) {
+
+                     //parse data as json
+                     try{
+
+                       var parsedData = JSON.parse(value);
+
+                       callback(null,  parsedData);
+
+                     }catch(e){
+
+                       callback(e);
+
+                     }
+
+                   } else {
+
+                     customError = new Error('Failed to get tax definitions.');
+                     customError.status = 500;
+                     customError.statusType = 'error';
+                     callback(customError);
+
+                   }
+
+                 }
+
+             });
+
+           },
+
+           findVehicle: function(callback){
+
+             VehicleModel.findById(details.vehicle)
+             .exec(function(err, vehicle){
+
+               if(err){
+
+                 //db error
+                 err.friendly = 'Something went wrong. Please try again.';
+                 err.status = 500;
+                 err.statusType = 'error';
+                 callback(err);
+
+               }else{
+
+                 if(vehicle){
+
+                   callback(null, vehicle);
+
+                 }else{
+
+                   customError = new Error('Vehicle not found.');
+                   customError.status = 404;
+                   customError.statusType = 'fail';
+                   callback(customError);
+
+                 }
+
+               }
+
+             });
+
+           },
+
+           findTaxAndCheckFee: ['getTaxesFromCache', function(results, callback){
+
+               var i;
+               var cachedTaxes = results.getTaxesFromCache.categories;
+
+               if(details.taxType == 'licence' || details.taxType == 'permit'){
+
+                   cachedTaxes = (details.taxType == 'licence') ? cachedTaxes.vehicleLicenses : cachedTaxes.vehiclePermits;
+
+                   async.eachOf(cachedTaxes, function(cachedTax, key, callback){
+
+                     //tax exists
+                     if (cachedTax.id == details.tax) {i = key;}
+                     callback();
+
+                   }, function(err){
 
                        if(err){
 
-                           //node cache error
-                           err.friendly = 'Something went wrong. Please try again.';
-                           err.status = 500;
-                           err.statusType = 'error';
                            callback(err);
 
                        }else{
 
-                           //parse data as json
-                           try{
+                           if (i != undefined) {
 
-                               var parsedData = JSON.parse(value);
+                             var j;
 
-                               callback(null,  parsedData);
+                             //check for fee
+                             async.eachOf(cachedTaxes[i].fees, function (fee, key, callback) {
 
-                           }catch(e){
+                               //fee exists
+                               if (fee.id == details.fee) {j = key;}
+                               callback()
 
-                               callback(e);
+                             }, function (err) {
 
-                           }
+                               if (j != undefined) {
 
-                       }
+                                 callback(null, {'tax': cachedTaxes[i], 'fee': cachedTaxes[i].fees[j]});
 
-                   });
+                               } else {
 
-               },
-
-               findTax: ['getTaxesFromCache', function(results, callback){
-
-                   var i;
-                   var cachedTaxes = results.getTaxesFromCache;
-
-                   if(details.taxType == 'licence' || details.taxType == 'permit'){
-
-                       cachedTaxes = (details.taxType == 'licence') ? cachedTaxes.vehicleLicenses : cachedTaxes.vehiclePermits;
-
-                       async.eachOf(cachedTaxes, function(cachedTax, key, callback){
-
-                           if(cachedTax.id == details.tax){
-
-                               i = key;
-
-                           }
-
-                           callback();
-
-                       }, function(err){
-
-                           if(err){
-
-                               callback(err);
-
-                           }else{
-
-                               if(i != undefined){
-
-                                   callback(null, cachedTaxes[i]);
-
-                               }else{
-
-                                   customError = new Error('Tax not found.');
-                                   customError.status = 404;
-                                   customError.statusType = 'fail';
-                                   callback(customError);
+                                 customError = new Error('Fee not found.');
+                                 customError.status = 404;
+                                 customError.statusType = 'fail';
+                                 callback(customError);
 
                                }
 
-                           }
+                             });
 
-                       });
 
-                  }else{
+                           } else {
 
-                      customError = new Error('Invalid tax type.');
-                      customError.status = 403;
-                      customError.statusType = 'fail';
-                      callback(customError);
-
-                  }
-
-               }],
-
-               findVehicle: function(callback){
-
-                   VehicleModel.findById(details.vehicle)
-                   .exec(function(err, vehicle){
-
-                       if(err){
-
-                           //db error
-                           err.friendly = 'Something went wrong. Please try again.';
-                           err.status = 500;
-                           err.statusType = 'error';
-                           callback(err);
-
-                       }else{
-
-                           if(vehicle){
-
-                               callback(null, vehicle);
-
-                           }else{
-
-                               customError = new Error('Vehicle not found.');
-                               customError.status = 404;
-                               customError.statusType = 'fail';
-                               callback(customError);
+                             customError = new Error('Tax not found.');
+                             customError.status = 404;
+                             customError.statusType = 'fail';
+                             callback(customError);
 
                            }
 
@@ -1442,122 +1528,256 @@
 
                    });
 
-               },
+              }else{
 
-               getDaysValid: ['findTax', function(results, callback){
+                  customError = new Error('Invalid tax type.');
+                  customError.status = 403;
+                  customError.statusType = 'fail';
+                  callback(customError);
 
-                   var cachedTax = results.findTax;
+              }
 
-                    //check if property exists
-                    if(cachedTax.duration.hasOwnProperty(details.duration)){
+           }],
 
-                        callback(null, cachedTax.duration[details.duration].daysValid);
+           checkForClashes: ['findTaxAndCheckFee', 'findVehicle', function (results, callback) {
 
-                    }else{
+             var tax = results.findTaxAndCheckFee.tax;
+             var now = moment();
 
-                        customError = new Error('Supplied duration does not exist for supplied tax.');
-                        customError.status = 400;
-                        customError.statusType = 'fail';
-                        callback(customError);
+             TokenModel.find({'vehicle': details.vehicle, '$and': [{'validFrom': {'$lte': now.toISOString()}, 'validUntil': {'$gte': now.toISOString()}}]})
+             .exec(function (err, tokens) {
 
-                    }
+               if (err) {
 
-               }],
+                 //node cache error
+                 err.friendly = 'Something went wrong. Please try again.';
+                 err.status = 500;
+                 err.statusType = 'error';
+                 callback(err);
 
-               createToken: ['getDaysValid', 'findVehicle', function(results, callback){
+               } else {
 
-                   var vehicle = results.findVehicle;
+                 if (tokens.length > 0) {
 
-                   //check if tax is already initialized
-                   if(vehicle.licences.indexOf(details.tax) === -1 && vehicle.permits.indexOf(details.tax) === -1){
+                   //traverse taxes
+                   async.each(tokens, function (token, callback) {
 
-                       var cachedTax = results.findTax;
-                       var daysValid = results.getDaysValid;
-                       var newToken = new TokenModel();
+                     //check for clashes
+                     if (tax.clashes.indexOf(token.taxID) === -1) {
 
-                       newToken.name = cachedTax.name;
-                       newToken.vehicle = details.vehicle;
-                       newToken.taxID = cachedTax.id;
-                       newToken.taxType = utilities.capitalizeString(details.taxType);
-                       newToken.minimumPaymentDue = details.minimumPaymentDue;
-                       newToken.paymentDueDate = new Date();
-                       newToken.validFrom = new Date();
-                       newToken.validUntil = Moment().add(daysValid, 'd');
-                       newToken.paymentStatus = 'Complete';
-                       newToken.authorized = true;
+                       callback();
 
-                       //save
-                       newToken.save(function(err){
+                     } else {
 
-                           if(err){
-
-                               callback(err); // TODO: Properly handle save error to make more readable
-
-                           }else{
-
-                               callback();
-
-                           }
-
-                       });
-
-                   }else{
-
-                       customError = new Error('Tax already initialized for this vehicle.');
+                       customError = new Error('Tax being registered for clashes with: ' + token.name);
                        customError.status = 403;
                        customError.statusType = 'fail';
                        callback(customError);
 
-                   }
+                     }
 
-               }],
+                   }, function (err) {
 
-               subscribeVehicleToTax: ['createToken', function(results, callback){
+                     if (err) {
 
-                    var vehicle = results.findVehicle;
+                       callback(err);
 
-                    if(details.taxType == 'licence'){
+                     } else {
 
-                        vehicle.licences.push(details.tax);
+                       callback();
 
-                    }else{
+                     }
 
-                        vehicle.permits.push(details.tax);
+                   });
 
-                    }
+                 }else{
 
-                    //save
-                    vehicle.save(function(err){
+                   //nothing to clash with
+                   callback();
 
-                        if(err){
-
-                            callback(err); // TODO: Properly handle save error to make more readable
-
-                        }else{
-
-                            callback();
-
-                        }
-
-                    });
-
-               }]
-
-           }, function(err, results){
-
-               if(err){
-
-                   next(err);
-
-               }else{
-
-                   next();
+                 }
 
                }
 
-           });
+             });
 
-       };
+           }],
+
+           checkVehicleUse: ['checkForClashes', function (results, callback) {
+
+             var vehicle = results.findVehicle;
+             var tax = results.findTaxAndCheckFee.tax;
+
+             if(tax.forVehicleUses.indexOf(vehicle.vehicleUse) !== -1){
+
+                callback();
+
+             }else{
+
+               customError = new Error('Tax is not applicable to vehicle use: ' + vehicle.vehicleUse);
+               customError.status = 403;
+               customError.statusType = 'fail';
+               callback(customError);
+
+             }
+
+           }],
+
+           getDaysValid: ['checkVehicleUse', function(results, callback){
+
+               var tax = results.findTaxAndCheckFee.tax;
+
+                //check if property exists
+                if(tax.duration.hasOwnProperty(details.duration)){
+
+                    callback(null, tax.duration[details.duration].daysValid);
+
+                }else{
+
+                    customError = new Error('Supplied duration does not exist for supplied tax.');
+                    customError.status = 400;
+                    customError.statusType = 'fail';
+                    callback(customError);
+
+                }
+
+           }],
+
+           getPrivateKey: function (callback) {
+
+             try {
+
+               //read cert
+               var ecPrivateKeyPEM = fs.readFileSync('ECPRV.cert', 'utf8');
+
+               //check if cert has content written to it
+               if (ecPrivateKeyPEM.length === 0) {
+
+                 customError = new Error('Private Key PEM not found.');
+                 customError.status = 500;
+                 customError.statusType = 'fail';
+                 callback(customError);
+
+               } else {
+
+                 callback(null, ecPrivateKeyPEM);
+
+               }
+
+             } catch (e) {
+
+               callback(e);
+
+             }
+
+           },
+
+           createToken: ['getDaysValid', 'findVehicle', 'getPrivateKey', function(results, callback){
+
+             var tax = results.findTaxAndCheckFee.tax;
+             var fee = results.findTaxAndCheckFee.fee;
+             var daysValid = results.getDaysValid;
+             var newToken = new TokenModel();
+
+             newToken.name = tax.name;
+             newToken.vehicle = details.vehicle;
+             newToken.taxID = tax.id;
+             newToken.feeID = details.fee;
+             newToken.taxType = utilities.capitalizeString(details.taxType);
+             newToken.minimumPaymentDue = fee[details.duration].amount;
+             newToken.paymentDueDate = new Date();
+             newToken.validFrom = new Date();
+             newToken.validUntil = moment().add(daysValid, 'd');
+             newToken.duration = details.duration;
+             newToken.paymentStatus = 'Complete';
+             newToken.authorized = true;
+
+             callback(null, newToken);
+
+           }],
+
+           generateAuthPair: ['createToken', function (results, callback) {
+
+             var vehicle = results.findVehicle;
+             var newToken = results.createToken;
+             var ecPrivateKeyPEM = results.getPrivateKey;
+
+             //data to sign
+             var objectToSign = {
+
+               "tid": newToken.taxID,
+               "fid": newToken.feeID,
+               "vnp": vehicle.numberPlate,
+               "vf": newToken.validFrom,
+               "vu": newToken.validUntil
+
+             };
+
+             try {
+
+               //stringify objectToSign and base64 encode
+               var base64StringToSign = Buffer.from(JSON.stringify(objectToSign)).toString('base64');
+
+               //sign
+               var sig = new jsrsasign.crypto.Signature({'alg':'SHA1withECDSA'});
+               sig.init(ecPrivateKeyPEM);
+               sig.updateString(base64StringToSign);
+               var signedString = sig.sign();
+
+               //concat to unsigned string
+               var authPair = base64StringToSign + ':' + signedString;
+
+               //create temporary store
+               req.tmp = {};
+               req.tmp.token = newToken._id;
+               req.tmp.authPair = newToken.authPair = authPair; //assign authPair property on newToken
+
+               callback();
+
+             } catch (e) {
+
+               callback(e);
+
+             }
+
+           }],
+
+           saveToken: ['generateAuthPair', function (results, callback) {
+
+             var newToken = results.createToken;
+
+             //save
+             newToken.save(function(err){
+
+               if(err){
+
+                 callback(err); // TODO: Properly handle save error to make more readable
+
+               }else{
+
+                 callback();
+
+               }
+
+             });
+
+           }]
+
+         }, function(err, results)  {
+
+             if (err) {
+
+               next(err);
+
+             } else {
+
+               next();
+
+             }
+
+         });
+
+     };
 
     };
 

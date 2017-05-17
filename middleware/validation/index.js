@@ -552,8 +552,8 @@
         req.sanitizeQuery('tax_id').whitelist(["0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ"]);
 
         //validate
-        req.checkParams('id', '@id parameter is undefined.').notEmpty();
-        req.checkParams('id', '@id value is not a valid mongoId.').isMongoId();
+        req.checkQuery('vehicle', '@vehicle parameter is undefined.').notEmpty();
+        req.checkQuery('vehicle', '@vehicle value is not a valid mongoId.').isMongoId();
         req.checkQuery('tax_id', '@tax_id parameter is undefined').notEmpty();
         req.checkQuery('payment_status', '@payment_status value is not one of Complete or Due').optional().isIn(['Complete', 'Due']);
 
@@ -644,9 +644,208 @@
     middleware.getOwnVehicleOffences = function(req, res, next){
 
         //validate
-        req.checkParams('id', '@id parameter is undefined.').notEmpty();
-        req.checkParams('id', '@id value is not a valid mongoId.').isMongoId();
-        req.checkQuery('payment_status', '@payment_status value is not one of Complete or Due').optional().isIn(['Complete', 'Due']);
+        req.checkQuery('vehicle', '@vehicle parameter is undefined.').notEmpty();
+        req.checkQuery('vehicle', '@vehicle value is not a valid mongoId.').isMongoId();
+        req.checkQuery('payment_status', '@payment_status value is not one of complete or due').optional().isIn(['complete', 'due']);
+
+        //check for errors
+        var errors = req.validationErrors();
+
+        if(errors){
+
+        var errorMessages = [];
+
+        async.each(errors, function(errorItem, callback){
+
+          errorMessages.push({
+
+            "message": errorItem.msg,
+            "param": errorItem.param
+
+          });
+
+          callback();
+
+        }, function(err){
+
+          console.log(errors);
+
+          //create a new error
+          customError = new Error('Validation Failed: ' + util.inspect(errors));
+          customError.friendly = errorMessages;
+          customError.status = 400;
+          customError.statusType = 'fail';
+          next(customError);
+
+        });
+
+        }else{
+
+        next();
+
+        }
+
+    };
+
+    middleware.getTaxes = function(req, res, next){
+
+    //validate
+    req.checkQuery('type', '@type parameter is undefined.').notEmpty();
+    req.checkQuery('type', '@type value is not one of permit or licence.').isIn(['permit', 'licence']);
+
+    //check for errors
+    var errors = req.validationErrors();
+
+    if(errors){
+
+      var errorMessages = [];
+
+      async.each(errors, function(errorItem, callback){
+
+        errorMessages.push({
+
+          "message": errorItem.msg,
+          "param": errorItem.param
+
+        });
+
+        callback();
+
+      }, function(err){
+
+        console.log(errors);
+
+        //create a new error
+        customError = new Error('Validation Failed: ' + util.inspect(errors));
+        customError.friendly = errorMessages;
+        customError.status = 400;
+        customError.statusType = 'fail';
+        next(customError);
+
+      });
+
+    }else{
+
+      next();
+
+    }
+
+    };
+
+    middleware.createTest = function(req, res, next){
+
+        //santize
+        req.sanitizeBody('name.first').whitelist(["-'abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ "]);
+        req.sanitizeBody('name.last').whitelist(["-'abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ "]);
+        req.sanitizeBody('identification').whitelist(["-0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ "]);
+
+        //validate
+        req.checkBody('name.first', '@name.first parameter is undefined.').notEmpty();
+        req.checkBody('name.last', '@name.last parameter is undefined.').notEmpty();
+        req.checkBody('identification', '@identification parameter is undefined.').notEmpty();
+        req.checkBody('officerType', '@officerType is not one of Testing, Licencing or Police.').isIn(['Testing', 'Licencing', 'Police']);
+
+        //check for errors
+        var errors = req.validationErrors();
+
+        if(errors){
+
+        var errorMessages = [];
+
+        async.each(errors, function(errorItem, callback){
+
+          errorMessages.push({
+
+            "message": errorItem.msg,
+            "param": errorItem.param
+
+          });
+
+          callback();
+
+        }, function(err){
+
+          console.log(errors);
+
+          //create a new error
+          customError = new Error('Validation Failed: ' + util.inspect(errors));
+          customError.friendly = errorMessages;
+          customError.status = 400;
+          customError.statusType = 'fail';
+          next(customError);
+
+        });
+
+        }else{
+
+        next();
+
+        }
+
+    };
+
+    middleware.createStudent = function(req, res, next){
+
+        //santize
+        req.sanitizeBody('name.first').whitelist(["-'abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ "]);
+        req.sanitizeBody('name.last').whitelist(["-'abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ "]);
+        req.sanitizeBody('identification').whitelist(["-0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ"]);
+        req.sanitizeBody('nationality').whitelist(["-',abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ "]);
+
+        //validate
+        req.checkBody('name.first', '@name.first parameter is undefined.').notEmpty();
+        req.checkBody('name.last', '@name.last parameter is undefined.').notEmpty();
+        req.checkBody('identification', '@identification parameter is undefined.').notEmpty();
+        req.checkBody('nationality', '@nationality parameter is undefined.').notEmpty();
+
+        //check for errors
+        var errors = req.validationErrors();
+
+        if(errors){
+
+        var errorMessages = [];
+
+        async.each(errors, function(errorItem, callback){
+
+          errorMessages.push({
+
+            "message": errorItem.msg,
+            "param": errorItem.param
+
+          });
+
+          callback();
+
+        }, function(err){
+
+          console.log(errors);
+
+          //create a new error
+          customError = new Error('Validation Failed: ' + util.inspect(errors));
+          customError.friendly = errorMessages;
+          customError.status = 400;
+          customError.statusType = 'fail';
+          next(customError);
+
+        });
+
+        }else{
+
+        next();
+
+        }
+
+    };
+
+    middleware.getStudentByIdentificationAndNationality = function(req, res, next){
+
+        //santize
+        req.sanitizeParams('identification').whitelist(["-0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ"]);
+        req.sanitizeParams('nationality').whitelist(["-',abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ "]);
+
+        //validate
+        req.checkParams('identification', '@identification parameter is undefined.').notEmpty();
+        req.checkParams('nationality', '@nationality parameter is undefined.').notEmpty();
 
         //check for errors
         var errors = req.validationErrors();

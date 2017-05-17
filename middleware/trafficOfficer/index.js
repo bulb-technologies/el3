@@ -44,31 +44,32 @@
   //get tokens
   middleware.getTokens = function(req, res, next){
 
-      //use query builder
+    //use query builder
 
-      var q = TokenModel.find();
+    var q = TokenModel.find();
 
-      q.lean()
-      .exec(function(err, tokens){
+    q.select('validUntil validFrom taxType feeID taxID vehicle paymentStatus')
+    q.lean()
+    .exec(function(err, tokens){
 
-          if(err){
+      if(err){
 
-            //db error
-            err.friendly = 'Something went wrong. Please try again.';
-            err.status = 500;
-            err.statusType = 'error';
-            next(err);
+      //db error
+      err.friendly = 'Something went wrong. Please try again.';
+      err.status = 500;
+      err.statusType = 'error';
+      next(err);
 
-          }else{
+      }else{
 
-              //create temporary store
-              req.tmp = {};
-              req.tmp.tokens = tokens;
-              next();
+        //create temporary store
+        req.tmp = {};
+        req.tmp.tokens = tokens;
+        next();
 
-          }
+      }
 
-      });
+    });
 
   };
 

@@ -38,7 +38,11 @@
 
   models.scannerBundleModel = db.model('Scanner Bundle', require('./scannerBundle'));
 
-   models.tokenModel = db.model('Token', require('./token'));
+  models.studentModel = db.model('Student', require('./student'));
+
+  models.testModel = db.model('Test', require('./test'));
+
+  models.tokenModel = db.model('Token', require('./token'));
 
   models.vehicleModel = db.model('Vehicle', require('./vehicle'));
 

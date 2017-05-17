@@ -8,6 +8,8 @@
     var jsonpatch = require('fast-json-patch');
     var VehicleModel = models.vehicleModel;
     var OffenceModel = models.offenceModel;
+    var TestModel = models.testModel;
+    var StudentModel = models.studentModel;
     var PersonConsumerModel = models.personConsumerModel;
 
     //define middleware here
@@ -258,231 +260,7 @@
 
     middleware.getOwnVehicle = function(cache){
 
-        return function(req, res, next){
-
-            var details = req.params;
-
-            async.auto({
-
-                findVehicle: function(callback){
-
-                    VehicleModel.findOne({'_id': details.id, 'owner.person': '58c2e83ec9df6709149dab5b'}) // TODO: Get id from session
-                    .select('licences permits created vehicleClass numberPlate')
-                    .lean()
-                    .exec(function(err, vehicle){
-
-                        if(err){
-
-                          //db error
-                          err.friendly = 'Something went wrong. Please try again.';
-                          err.status = 500;
-                          err.statusType = 'error';
-                          next(err);
-
-                        }else{
-
-                            if(vehicle){
-
-                                callback(null, vehicle);
-
-                            }else{
-
-                                customError = new Error('Vehicle not found.');
-                                customError.status = 404;
-                                customError.statusType = 'fail';
-                                next(customError);
-
-                            }
-
-                        }
-
-                    });
-
-                },
-
-                getTaxesFromCache: ['findVehicle', function(results, callback){
-
-                    cache.get(process.env.TAXES_CACHE, function(err, value){
-
-                        if(err){
-
-                            //node cache error
-                            err.friendly = 'Something went wrong. Please try again.';
-                            err.status = 500;
-                            err.statusType = 'error';
-                            callback(err);
-
-                        }else{
-
-                            var parsedData;
-
-                            //parse data as json
-                            try{
-
-                                parsedData = JSON.parse(value);
-
-                                callback(null, parsedData);
-
-                            }catch(e){
-
-                                callback(e);
-
-                            }
-
-                        }
-
-                    });
-
-                }],
-
-                populateTaxes: ['getTaxesFromCache', function(results, callback){
-
-                    var vehicle = results.findVehicle;
-                    var licences = results.getTaxesFromCache.categories.vehicleLicenses;
-                    var permits = results.getTaxesFromCache.categories.vehiclePermits;
-
-                    //find in licences and permits
-                    async.parallel({
-
-                        findInLicences: function(callback){
-
-                            var licencesWanted  = [];
-
-                            //traverse licences in vehicle
-                            async.each(vehicle.licences, function(licenceInVehicle, callback){
-
-                                //traverse list of cached licences
-                                async.each(licences, function(licenceInCache, callback){
-
-                                    if(licenceInCache.id == licenceInVehicle){
-
-                                        licencesWanted.push({'name': licenceInCache.name, 'id': licenceInCache.id});
-
-                                    }
-
-                                    callback();
-
-                                }, function(err){
-
-                                    if(err){
-
-                                        callback(err);
-
-                                    }else{
-
-                                        callback();
-
-                                    }
-
-                                });
-
-                            }, function(err){
-
-                                if(err){
-
-                                    callback(err);
-
-                                }else{
-
-                                    callback(null, licencesWanted);
-
-                                }
-
-                            });
-
-                        },
-
-                        findInPermits: function(callback){
-
-                            var permitsWanted  = [];
-
-                            //traverse permits in vehicle
-                            async.each(vehicle.permits, function(permitInVehicle, callback){
-
-                                //traverse list of cached permits
-                                async.each(permits, function(permitInCache, callback){
-
-                                    if(permitInCache.id == permitInVehicle){
-
-                                        permitsWanted.push({'name': permitInCache.name, 'id': permitInCache.id});
-
-                                    }
-
-                                    callback();
-
-                                }, function(err){
-
-                                    if(err){
-
-                                        callback(err);
-
-                                    }else{
-
-                                        callback();
-
-                                    }
-
-                                });
-
-                            }, function(err){
-
-                                if(err){
-
-                                    callback(err);
-
-                                }else{
-
-                                    callback(null, permitsWanted);
-
-                                }
-
-                            });
-
-                        }
-
-                    }, function(err, results){
-
-                        if(err){
-
-                            callback(err);
-
-                        }else{
-
-                            //replace in vehicle object
-                            vehicle.permits = results.findInPermits;
-                            vehicle.licences = results.findInLicences;
-
-                            //create temporary store
-                            req.tmp = {};
-                            req.tmp.vehicle = vehicle;
-
-                            callback();
-
-                        }
-
-                    });
-
-                }]
-
-            }, function(err, results){
-
-                if(err){
-
-                    next(err);
-
-                }else{
-
-                    next();
-
-                }
-
-            });
-
-        }
-
-    };
-
-    middleware.getOwnVehicleTokens = function(req, res, next){
+      return function(req, res, next){
 
         var details = req.params;
 
@@ -490,7 +268,122 @@
 
             findVehicle: function(callback){
 
-                VehicleModel.findOne({'_id': details.id, 'owner.person': '58c2e83ec9df6709149dab5b'}) // TODO: Get id from session
+              VehicleModel.findOne({'_id': details.id, 'owner.person': '58c2e83ec9df6709149dab5b'}) // TODO: Get id from session
+              .select('created vehicleClass numberPlate')
+              .lean()
+              .exec(function(err, vehicle){
+
+                if(err){
+
+                  //db error
+                  err.friendly = 'Something went wrong. Please try again.';
+                  err.status = 500;
+                  err.statusType = 'error';
+                  next(err);
+
+                }else{
+
+                  if (vehicle) {
+
+                    callback(null, vehicle);
+
+                  } else {
+
+                    customError = new Error('Vehicle not found.');
+                    customError.status = 404;
+                    customError.statusType = 'fail';
+                    next(customError);
+
+                  }
+
+                }
+
+              });
+
+            },
+
+            groupTokens: ['findVehicle', function (results, callback) {
+
+              var vehicle = results.findVehicle;
+
+              TokenModel.aggregate([
+
+                //match
+                {"$match": {"vehicle": vehicle._id}},
+                {"$group": {"_id": {"name": "$name", "taxType": "$taxType", "taxID": "$taxID"}}}
+
+              ])
+              .exec(function (err, result) {
+
+                if (err) {
+
+                  //node cache error
+                  err.friendly = 'Something went wrong. Please try again.';
+                  err.status = 500;
+                  err.statusType = 'error';
+                  callback(err);
+
+                } else {
+
+                  //create temporary store
+                  req.tmp = {};
+
+                  //map aggregate result to vehicle taxes to show taxes the vehicle is and has been susbribed to
+                  if (result.length) {
+
+                    async.map(result, function (element, callback) {
+
+                      callback(null, element._id);
+
+                    }, function (err, results) {
+
+                      vehicle.taxes = results;
+                      req.tmp.vehicle = vehicle;
+                      callback();
+
+                    });
+
+                  } else {
+
+                    vehicle.taxes = [];
+                    req.tmp.vehicle = vehicle;
+                    callback();
+
+                  }
+
+                }
+
+              });
+
+            }]
+
+          }, function(err, results){
+
+              if(err){
+
+                next(err);
+
+              }else{
+
+                next();
+
+              }
+
+          });
+
+      }
+
+    };
+
+    middleware.getOwnVehicleTokens = function(req, res, next){
+
+        var details = req.query;
+
+        async.auto({
+
+            findVehicle: function(callback){
+
+                VehicleModel.findOne({'_id': details.vehicle, 'owner.person': '58c2e83ec9df6709149dab5b'}) // TODO: Get id from session
                 .select('_id')
                 .lean()
                 .exec(function(err, vehicle){
@@ -527,21 +420,21 @@
             getTokens: ['findVehicle', function(results, callback){
 
                 //query builder
-                var q = TokenModel.find({'vehicle': results.findVehicle._id, 'taxID': req.query.tax_id});
+                var q = TokenModel.find({'vehicle': results.findVehicle._id, 'taxID': details.tax_id});
 
-                if(req.query.payment_status == 'Complete'){
+                if(details.payment_status == 'Complete'){
 
                     q.where({'paymentStatus': 'Complete'})
 
                 }
 
-                if(req.query.payment_status == 'Due'){
+                if(details.payment_status == 'Due'){
 
                     q.where({'paymentStatus': 'Due'})
 
                 }
 
-                q.select('name validUntil paymentDueDate paymentStatus taxType')
+                q.select('validUntil paymentStatus taxType')
                 .lean()
                 .exec(function(err, tokens){
 
@@ -615,8 +508,8 @@
 
                         if(token.paymentStatus == 'Due'){
 
-                            //delete late payment  proof since the token isnt paid for
-                            delete token.latePaymentProof;
+                            //delete payment  proof since the token isnt paid for
+                            delete token.authPair;
 
                         }
 
@@ -651,13 +544,13 @@
 
     middleware.getOwnVehicleOffences = function(req, res, next){
 
-        var details = req.params;
+        var details = req.query;
 
         async.auto({
 
             findVehicle: function(callback){
 
-                VehicleModel.findOne({'_id': details.id, 'owner.person': '58c2e83ec9df6709149dab5b'}) // TODO: Get id from session
+                VehicleModel.findOne({'_id': details.vehicle, 'owner.person': '58c2e83ec9df6709149dab5b'}) // TODO: Get id from session
                 .select('_id')
                 .lean()
                 .exec(function(err, vehicle){
@@ -693,22 +586,24 @@
 
             getOffences: ['findVehicle', function(results, callback){
 
-                //query builder
-                var q = OffenceModel.find({'vehicle': results.findVehicle._id});
+              var vehicle = results.findVehicle;
 
-                if(req.query.payment_status == 'Complete'){
+                //query builder
+                var q = OffenceModel.find({'vehicle': vehicle._id});
+
+                if(details.payment_status == 'complete'){
 
                     q.where({'paymentStatus': 'Complete'})
 
                 }
 
-                if(req.query.payment_status == 'Due'){
+                if(details.payment_status == 'due'){
 
                     q.where({'paymentStatus': 'Due'})
 
                 }
 
-                q.select('committed ticketReference paymentStatus')
+                q.select('dateCommitted paymentStatus paymentDueDate')
                 .lean()
                 .exec(function(err, offences){
 
@@ -787,7 +682,7 @@
 
                     }else{
 
-                        customError = new Error('Offence doesn\'t belong to vehicle ' + token.vehicle.numberPlate +  '.');
+                        customError = new Error('Offence doesn\'t belong to vehicle ' + offence.vehicle.numberPlate +  '.');
                         customError.status = 403;
                         customError.statusType = 'fail';
                         next(customError);
@@ -806,6 +701,113 @@
             }
 
         });
+
+    };
+
+    middleware.createTest = function (req, res, next) {
+
+      var details = req.body;
+
+      //check for duplicate booking
+      //check for correct booking order
+
+      async.auto({
+
+        createTest: function (callback) {
+
+          //create instance of testModel
+          var newTest = new TestModel();
+          console.log(newTest);
+
+          callback();
+
+        }
+
+      }, function (err, results) {
+
+        if (err) {
+
+          next(err);
+
+        } else {
+
+          next();
+
+        }
+
+      });
+
+    };
+
+    middleware.createStudent = function (req, res, next) {
+
+      var details = req.body;
+
+      //create instance of StudentModel
+      var newStudent =  new StudentModel();
+      newStudent.name.first = details.name.first;
+      newStudent.name.last = details.name.last;
+      newStudent.identification = details.identification;
+      newStudent.nationality = details.nationality;
+
+      //save
+      newStudent.save(function (err) {
+
+        if (err) {
+
+          // TODO: Proper error handling
+          next(err);
+
+        } else {
+
+          //create temporary store
+          req.tmp = {};
+          req.tmp.student = newStudent._id;
+          next();
+
+        }
+
+      });
+
+    };
+
+    middleware.getStudentByIdentificationAndNationality = function (req, res, next) {
+
+      var details = req.params;
+
+      StudentModel.findOne({'identification': details.identification, 'nationality': details.nationality})
+      .exec(function (err, student) {
+
+        if (err) {
+
+          //db error
+          err.friendly = 'Something went wrong. Please try again.';
+          err.status = 500;
+          err.statusType = 'error';
+          next(err);
+
+        } else {
+
+          if (student) {
+
+            //create temporary store
+            req.tmp = {};
+            req.tmp.student = student;
+            next();
+
+          } else {
+
+            customError = new Error('Student not found.');
+            customError.status = 404;
+            customError.statusType = 'fail';
+            next(customError);
+
+          }
+
+        }
+
+      });
+
 
     };
 
