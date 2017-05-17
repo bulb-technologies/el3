@@ -434,7 +434,7 @@
 
                 }
 
-                q.select('validUntil paymentStatus taxType')
+                q.select('validUntil paymentStatus taxType name')
                 .lean()
                 .exec(function(err, tokens){
 
