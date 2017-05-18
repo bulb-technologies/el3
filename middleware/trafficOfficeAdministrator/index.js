@@ -93,7 +93,7 @@
         newOffence.minimumPaymentDue = details.amount;
         newOffence.dateCommitted = details.dateCommitted;
         newOffence.telephone = details.telephone;
-        newOffence.paymentReference = '1' + now.year().toString() + count; //char @ position 0; 1 denotes a traffic offence payment, while 0 denotes a licence/permit payment
+        newOffence.paymentReference = '1' +  details.telephone + now.year().toString() + count; //char @ position 0; 1 denotes a traffic offence payment, while 0 denotes a licence/permit payment
         newOffence.paymentDueDate = moment().add(PAYMENT_DUE_BUFFER, 'd');
 
         if (details.paymentStatus) {
