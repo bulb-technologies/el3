@@ -603,7 +603,7 @@
 
                 }
 
-                q.select('dateCommitted paymentStatus paymentDueDate')
+                q.select('dateCommitted paymentStatus paymentDueDate ticketReference')
                 .lean()
                 .exec(function(err, offences){
 

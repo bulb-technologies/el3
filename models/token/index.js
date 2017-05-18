@@ -18,8 +18,7 @@
     taxID: {type: String, trim: true, index: true, required: true},
     feeID: {type: String, trim: true, index: true, required: true},
     taxType: {type: String, required: true, enum: ['Licence', 'Permit']},
-    telephone: {type: String, trim: true, sparse: true}, //used as an identifier during some forms of payment
-    paymentReference: {type: String, trim: true, sparse: true}, //used as reference during some forms of payment
+    paymentReference: {type: String, trim: true, sparse: true, unique: true}, //used as reference during some forms of payment
     paymentStatus: {type: String, index: true, required: true, default: 'Due', enum: ['Due', 'Complete']},
     note: {type: String, trim:true, sparse: true},
     created: {type: Date, default: Date.now()},
