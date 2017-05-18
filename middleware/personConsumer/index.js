@@ -434,7 +434,8 @@
 
                 }
 
-                q.select('validUntil paymentStatus taxType name')
+                q.sort({'created': -1})
+                .select('validUntil validFrom paymentStatus name')
                 .lean()
                 .exec(function(err, tokens){
 
@@ -447,6 +448,8 @@
                       callback(err);
 
                   }else{
+
+                      console.log(tokens);
 
                       //create temporary store
                       req.tmp = {};
