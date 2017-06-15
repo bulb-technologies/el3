@@ -17,7 +17,7 @@
       var q = VehicleModel.find();
 
       q.lean()
-      .select('numberPlate rfidTagSerialNumber permits licences')
+      .select('numberPlate rfidTagSerialNumber vehicleUse lastModified')
       .exec(function(err, vehicles){
 
           if(err){
